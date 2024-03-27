@@ -1,27 +1,12 @@
-import pandas as pd;
-import numpy as np 
-import pycountry as pc
-from pyspark.sql import SparkSession
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions, QueryOptions
-from couchbase.auth import PasswordAuthenticator
-from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions, QueryOptions
-from couchbase.bucket import Bucket
-from couchbase.management.buckets import CreateBucketSettings
+from couchbase.options import ClusterOptions
 
 import os
 from dotenv import load_dotenv
-from datetime import datetime 
-from datetime import timedelta
-import time
-import requests
+from alive_progress import alive_bar
+
+import matplotlib.pyplot as plt
 
 from elt import ELT
 from etl import ETL
@@ -37,7 +22,8 @@ class ETLvsELT:
 
     def benchmark_etlvselt(self):
         results = []
-        numRuns = 2
+        numRuns = 5
+    
         for _ in range(numRuns):
             #Create a cluster instance drop all buckets
             #Lets insert the data into buckets
@@ -56,19 +42,35 @@ class ETLvsELT:
             # ELT
             eltTime = self.elt.benchmark()
             results.append((etlTime, eltTime))
-        
+                      
+            
         print(f"ETL vs ELT Benchmark over {numRuns} runs:")
         print("ETL Time (s), ELT Time (s)")
         for etlTime, eltTime in results:
             print(f"{etlTime}, {eltTime}")
 
-        # TODO: Rever isto do int
         etl_times = [etlTime.total_seconds() for etlTime, _ in results]
         elt_times = [eltTime.total_seconds() for _, eltTime in results]
         avg_etl_time = sum(etl_times) / len(etl_times)
         avg_elt_time = sum(elt_times) / len(elt_times)
         avg_time_diff = avg_etl_time - avg_elt_time
-        print(f"ETL vs ELT Benchmark (Average): {avg_time_diff}")
+        print(f"ETL Average Time: {avg_etl_time} seconds")
+        print(f"ELT Average Time: {avg_elt_time} seconds")
+        print(f"ETL vs ELT Benchmark (Average): {avg_time_diff} seconds")
         print("ETL vs ELT Benchmark Completed")
+
+        
+        bar_width = 0.4  
+
+        # Plotting
+        plt.bar(range(numRuns), etl_times, width=bar_width, label='ETL')
+        plt.bar([x + bar_width for x in range(numRuns)], elt_times, width=bar_width, label='ELT')
+        plt.legend()
+        plt.title("ETL vs ELT Benchmark")
+        plt.xlabel("Run")
+        plt.ylabel("Time (seconds)")
+        plt.show()
+
+
 
 ETLvsELT()
